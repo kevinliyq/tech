@@ -57,7 +57,7 @@ public class RedisConfiguration extends CachingConfigurerSupport {
 
         List<JedisShardInfo> jedisShardInfos = new ArrayList<>();
         jedisShardInfos.add(new JedisShardInfo(hostname1, port1));
-        //jedisShardInfos.add(new JedisShardInfo(hostname2, port2));
+        jedisShardInfos.add(new JedisShardInfo(hostname2, port2));
 
         return new ShardedJedisPool(jedisPoolConfig, jedisShardInfos);
     }
