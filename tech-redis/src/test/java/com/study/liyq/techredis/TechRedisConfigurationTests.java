@@ -7,6 +7,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import redis.clients.jedis.ShardedJedisPool;
 
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+
 import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringRunner.class)
@@ -15,6 +19,10 @@ public class TechRedisConfigurationTests {
 
     @Autowired
     private ShardedJedisPool shardedJedisPool;
+
+    private static int COUNTER = 0;
+
+    private static int TOTAL = 40;
 
     @Test
     public void testSet(){
@@ -25,6 +33,67 @@ public class TechRedisConfigurationTests {
         assertEquals(value, shardedJedisPool.getResource().get(key));
 
         shardedJedisPool.getResource().del(key);
+    }
+
+    @Test
+    public void testDistributedLock() throws Exception
+    {
+        CompletableFuture<Void> completableFuture1 = CompletableFuture.runAsync(new CounterIncr()).whenComplete((result, e) -> {System.out.println("completableFuture1 is ended"); });
+
+        CompletableFuture<Void> completableFuture2 =  CompletableFuture.runAsync(new CounterIncr()).whenComplete((result, e) -> {System.out.println("completableFuture2 is ended"); });
+
+        CompletableFuture.allOf(completableFuture1, completableFuture2).whenComplete((t, u) -> {System.out.println("All completed");}).get();
+    }
+
+    private boolean lock(String key, String value)
+    {
+        String response = shardedJedisPool.getResource().set(key, value, "NX", "EX", 5);
+
+        boolean isLock = "OK".equals(response);
+
+        if(isLock)
+        {
+            System.out.println(Thread.currentThread().getName() + " get the lock");
+        }
+
+        return isLock;
+    }
+
+    private void unlock(String key)
+    {
+        shardedJedisPool.getResource().del(key);
+        System.out.println(Thread.currentThread().getName() + " release the lock");
+    }
+
+     class CounterIncr implements Runnable{
+
+        @Override
+        public void run() {
+            String uniqueId = UUID.randomUUID().toString();
+            while (COUNTER < TOTAL) {
+                while (COUNTER < TOTAL && !lock("user.lock", uniqueId)) {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                        break;
+                    }
+                }
+
+                if (COUNTER >= TOTAL) {
+                    System.out.println(Thread.currentThread().getName() + " break");
+                    return;
+                }
+
+                try {
+                    System.out.println(Thread.currentThread().getName() + ":" + (++COUNTER));
+                } finally {
+                    unlock("user.lock");
+                }
+
+            }
+
+        }
     }
 
 
