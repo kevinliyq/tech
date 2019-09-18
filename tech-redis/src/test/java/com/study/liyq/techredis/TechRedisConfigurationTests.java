@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import redis.clients.jedis.ShardedJedis;
 import redis.clients.jedis.ShardedJedisPool;
 
 import java.util.UUID;
@@ -22,17 +23,23 @@ public class TechRedisConfigurationTests {
 
     private static int COUNTER = 0;
 
-    private static int TOTAL = 40;
+    private static int TOTAL = 100;
 
     @Test
     public void testSet(){
         String key = "user:id:1";
         String value = "kevin";
-        shardedJedisPool.getResource().set(key, value);
+        ShardedJedis shardedJedis = shardedJedisPool.getResource();
 
-        assertEquals(value, shardedJedisPool.getResource().get(key));
+        try {
+            shardedJedis.set(key, value);
 
-        shardedJedisPool.getResource().del(key);
+            assertEquals(value, shardedJedis.get(key));
+
+            shardedJedis.del(key);
+        } finally {
+            shardedJedis.close();
+        }
     }
 
     @Test
@@ -47,22 +54,36 @@ public class TechRedisConfigurationTests {
 
     private boolean lock(String key, String value)
     {
-        String response = shardedJedisPool.getResource().set(key, value, "NX", "EX", 5);
+        ShardedJedis shardedJedis = shardedJedisPool.getResource();
 
-        boolean isLock = "OK".equals(response);
+        String response;
+        try {
+            response = shardedJedis.set(key, value, "NX", "EX", 10);
 
-        if(isLock)
-        {
-            System.out.println(Thread.currentThread().getName() + " get the lock");
+        } finally {
+            shardedJedis.close();
         }
 
+        boolean isLock = "OK".equals(response);
         return isLock;
     }
 
-    private void unlock(String key)
+    /**
+     * release lock only if the owner to release is the one who locked
+     * @param key
+     * @param value
+     */
+    private void unlock(String key, String value)
     {
-        shardedJedisPool.getResource().del(key);
-        System.out.println(Thread.currentThread().getName() + " release the lock");
+        ShardedJedis shardedJedis = shardedJedisPool.getResource();
+
+        try {
+            if (value.equals(shardedJedis.get(key))) {
+                shardedJedis.del(key);
+            }
+        }finally {
+            shardedJedis.close();
+        }
     }
 
      class CounterIncr implements Runnable{
@@ -88,7 +109,7 @@ public class TechRedisConfigurationTests {
                 try {
                     System.out.println(Thread.currentThread().getName() + ":" + (++COUNTER));
                 } finally {
-                    unlock("user.lock");
+                    unlock("user.lock", uniqueId);
                 }
 
             }
