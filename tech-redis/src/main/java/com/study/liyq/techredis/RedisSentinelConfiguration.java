@@ -72,7 +72,8 @@ public class RedisSentinelConfiguration extends CachingConfigurerSupport {
 
     @Bean("jedisPool")
     public JedisPool jedisPool(@Autowired JedisSentinelPool jedisSentinelPool, @Autowired JedisPoolConfig jedisPoolConfig) {
-        JedisPool jedisPool = new JedisPool(jedisPoolConfig, jedisSentinelPool.getCurrentHostMaster().getHost(), jedisSentinelPool.getCurrentHostMaster().getPort(), timeout, "");
+        String password = null;
+        JedisPool jedisPool = new JedisPool(jedisPoolConfig, jedisSentinelPool.getCurrentHostMaster().getHost(), jedisSentinelPool.getCurrentHostMaster().getPort(), timeout, password);
         return jedisPool;
     }
 
