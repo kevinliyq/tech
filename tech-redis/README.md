@@ -117,6 +117,40 @@ Redis
    * 锁的有效期；当原因客户端断电等问题，如果锁没有设置有效期，那锁可能永远不能释放
    * 上锁需要原子操作; 如果通过set和expire两个操作上锁，这分别是两个操作，没有做到原子性就可能出现#1中问题
    * 锁最好的情况由拥有者来释放，除非在拥护者无效的情况等待过期
+   
+7. Sentinel 哨兵
+   参看: 【https://redis.io/topics/sentinel】
+   Sentinel是用于监控Redis Master/Slave的一种解决方案，它可以实现在Redis Master下线的情况进行主从切换。
+   同时Sentinel可以搭建HA的配置，Sentinel的配置：
+   
+   '''
+   sentinel monitor mymaster 127.0.0.1 6379 2
+   sentinel down-after-milliseconds mymaster 60000
+   sentinel failover-timeout mymaster 180000
+   sentinel parallel-syncs mymaster 1
+   
+   sentinel monitor resque 192.168.1.3 6380 4
+   sentinel down-after-milliseconds resque 10000
+   sentinel failover-timeout resque 180000
+   sentinel parallel-syncs resque 5
+   
+   ##### enable this if no password
+   bind 0.0.0.0 if enable remote access
+   protected-mode no
+   
+   '''
+   
+   
+   Sentinel的监控有以下特点：
+   
+   * Sentinels与其他Sentinels保持联系，以便相互检查彼此的可用性，并交换消息。但是，您不需要在运行的每个Sentinel实例中配置其他Sentinel地址的列表，因为Sentinel使用Redis实例发布/订阅功能来发现监视相同主服务器和从服务器的其他Sentinel。
+   通过将hello消息发送到名为的通道 来实现此功能__sentinel__:hello。
+   同样，您不需要配置连接到主服务器的从服务器的列表是什么，因为Sentinel会在查询Redis时自动发现此列表。
+   
+   * 每个Sentinel __sentinel__:hello每两秒钟将消息发布到每个受监视的主从属Pub / Sub通道，并通过ip，port，runid宣布其存在。
+   每个Sentinel都订阅__sentinel__:hello了每个主节点和从节点的Pub / Sub通道，以查找未知的哨兵。当检测到新的哨兵时，它们被添加为该Redis Master的哨兵。
+   Hello消息还包括主服务器的完整当前配置。如果接收Sentinel具有给定主机的配置，该配置早于接收的信息，则会立即更新为新配置。
+   在向主服务器添加新的哨兵之前，Sentinel始终检查是否已存在具有相同runid或相同地址（ip和端口对）的标记。在这种情况下，将删除所有匹配的标记，并添加新的标记。
       
    
 
