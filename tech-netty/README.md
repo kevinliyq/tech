@@ -23,6 +23,15 @@ ChannelHandler处理I/O实现或者拦截I/O操作，然后转交给下一个Cha
 * EventLoopGroup
 用户注册Channel，已经调用对应的Event用于处理注册后的所有I/O操作
 
+2. 问题
+* Channel和Socket的关系
+  1. Socket是基于阻塞的连接，服务器需要为每个连接创建一个线程去出去，而在其上的I/O操作是阻塞的，即数据准备好才可以读，buffer不为空才可以写。
+  所以性能上比较查。
+  Channel可以支持阻塞和非阻塞的方式, 这样Server可以采用单个形成去轮训可用的I/O请求，当有请求来时select会被唤醒，这使得我们可以用单个形成去支持多个Channel的连接即多路I/O复用。
+  
+  2. Socket 是基于流的，而Channel是基于buffer缓冲区，以block进行读写，效率比较高，如果采用DMA，可以做到zero-copy，即数据在套接字和内核态中操作，而无需copy到用户态。
+* 
+
                                                 
 
 

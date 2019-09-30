@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisShardInfo;
@@ -14,7 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
-@PropertySource("classpath:redis.properties")
+@PropertySource("classpath:application-sharedredis.properties")
+@Profile("sharedredis")
 public class RedisConfiguration extends CachingConfigurerSupport {
 
     @Value("${jedis.max.total}")
