@@ -6,6 +6,7 @@ import net.spy.memcached.ConnectionObserver;
 import net.spy.memcached.DefaultHashAlgorithm;
 import net.spy.memcached.FailureMode;
 import net.spy.memcached.MemcachedClient;
+import net.spy.memcached.transcoders.SerializingTranscoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +39,9 @@ public class MemcachedConfiguration
 
         ConnectionFactoryBuilder cfb = new ConnectionFactoryBuilder();
         cfb.setHashAlg(DefaultHashAlgorithm.KETAMA_HASH)
+                .setTranscoder(new SerializingTranscoder())
                 .setDaemon(true)
+                .setOpTimeout(2000)
                 .setInitialObservers(Collections.singleton(new ConnectionObserver(){
                     @Override public void connectionEstablished(SocketAddress sa, int reconnectCount)
                     {
@@ -58,7 +61,7 @@ public class MemcachedConfiguration
         List<InetSocketAddress> inetSocketAddresses = getInetSocketAddress();
         try
         {
-            memcachedClient = new MemcachedClient(inetSocketAddresses);
+            memcachedClient = new MemcachedClient(cfb.build(), inetSocketAddresses);
         }
         catch (IOException e)
         {
