@@ -151,6 +151,17 @@ Redis
    Hello消息还包括主服务器的完整当前配置。如果接收Sentinel具有给定主机的配置，该配置早于接收的信息，则会立即更新为新配置。
    在向主服务器添加新的哨兵之前，Sentinel始终检查是否已存在具有相同runid或相同地址（ip和端口对）的标记。在这种情况下，将删除所有匹配的标记，并添加新的标记。
    
+   * Sentinel 采用Raft协议来选举leader。
+     * Raft协议的每个副本都会处于三种状态之一：Leader、Follower、Candidate。当Follower在一定时间内没有收到leader的心跳时会触发leader的选举，选举是基于term(任期)，term有唯一的id保存在每个node上。每个term一开始就进行选主
+     Follower将自己维护的current_term_id加1。
+     然后将自己的状态转成Candidate
+     发送RequestVoteRPC消息(带上current_term_id) 给 其它所有server
+     
+     * 自己被选成了主。当收到了majority的投票后，状态切成Leader，并且定期给其它的所有server发心跳消息（不带log的AppendEntriesRPC）以告诉对方自己是current_term_id所标识的term的leader。每个term最多只有一个leader，term id作为logical clock，在每个RPC消息中都会带上，用于检测过期的消息。当一个server收到的RPC消息中的rpc_term_id比本地的current_term_id更大时，就更新current_term_id为rpc_term_id，并且如果当前state为leader或者candidate时，将自己的状态切成follower。如果rpc_term_id比本地的current_term_id更小，则拒绝这个RPC消息。
+     * 别人成为了主。当Candidator在等待投票的过程中，收到了大于或者等于本地的current_term_id的声明对方是leader的AppendEntriesRPC时，则将自己的state切成follower，并且更新本地的current_term_id。
+     * 没有选出主。当投票被瓜分，没有任何一个candidate收到了majority的vote时，没有leader被选出。这种情况下，每个candidate等待的投票的过程就超时了，接着candidates都会将本地的current_term_id再加1，发起RequestVoteRPC进行新一轮的leader election
+
+   
 8. Reids Cluster
    Redis Cluster是Redis提供HA的一种服务器端实现方案。Redis集群包括若干个master node，可以相应write操作。每个master node可以配置多个从slaves。
    
