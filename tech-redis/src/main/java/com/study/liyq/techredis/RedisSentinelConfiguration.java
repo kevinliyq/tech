@@ -6,15 +6,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import redis.clients.jedis.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 @Configuration
-@PropertySource("classpath:redis-sentinel.properties")
+@PropertySource("classpath:properties-sentinel.properties")
+@Profile("sentinel")
 public class RedisSentinelConfiguration extends CachingConfigurerSupport {
 
     @Value("${jedis.max.total}")

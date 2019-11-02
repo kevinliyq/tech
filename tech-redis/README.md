@@ -145,13 +145,37 @@ Redis
    
    * Sentinels与其他Sentinels保持联系，以便相互检查彼此的可用性，并交换消息。但是，您不需要在运行的每个Sentinel实例中配置其他Sentinel地址的列表，因为Sentinel使用Redis实例发布/订阅功能来发现监视相同主服务器和从服务器的其他Sentinel。
    通过将hello消息发送到名为的通道 来实现此功能__sentinel__:hello。
-   同样，您不需要配置连接到主服务器的从服务器的列表是什么，因为Sentinel会在查询Redis时自动发现此列表。
+   同样，您不需要配置连接到主服务器的从服务器的列表是什么，因为Sentinel会在查询Redis时自动发现此列表。vdsSSFFFFFFFFFFSSSSVJYGYHY66IH6IGDGJOITJHKG
    
    * 每个Sentinel __sentinel__:hello每两秒钟将消息发布到每个受监视的主从属Pub / Sub通道，并通过ip，port，runid宣布其存在。
-   每个Sentinel都订阅__sentinel__:hello了每个主节点和从节点的Pub / Sub通道，以查找未知的哨兵。当检测到新的哨兵时，它们被添加为该Redis Master的哨兵。
    Hello消息还包括主服务器的完整当前配置。如果接收Sentinel具有给定主机的配置，该配置早于接收的信息，则会立即更新为新配置。
    在向主服务器添加新的哨兵之前，Sentinel始终检查是否已存在具有相同runid或相同地址（ip和端口对）的标记。在这种情况下，将删除所有匹配的标记，并添加新的标记。
-      
+   
+   * Sentinel 采用Raft协议来选举leader。
+     * Raft协议的每个副本都会处于三种状态之一：Leader、Follower、Candidate。当Follower在一定时间内没有收到leader的心跳时会触发leader的选举，选举是基于term(任期)，term有唯一的id保存在每个node上。每个term一开始就进行选主
+     Follower将自己维护的current_term_id加1。
+     然后将自己的状态转成Candidate
+     发送RequestVoteRPC消息(带上current_term_id) 给 其它所有server
+     
+     * 自己被选成了主。当收到了majority的投票后，状态切成Leader，并且定期给其它的所有server发心跳消息（不带log的AppendEntriesRPC）以告诉对方自己是current_term_id所标识的term的leader。每个term最多只有一个leader，term id作为logical clock，在每个RPC消息中都会带上，用于检测过期的消息。当一个server收到的RPC消息中的rpc_term_id比本地的current_term_id更大时，就更新current_term_id为rpc_term_id，并且如果当前state为leader或者candidate时，将自己的状态切成follower。如果rpc_term_id比本地的current_term_id更小，则拒绝这个RPC消息。
+     * 别人成为了主。当Candidator在等待投票的过程中，收到了大于或者等于本地的current_term_id的声明对方是leader的AppendEntriesRPC时，则将自己的state切成follower，并且更新本地的current_term_id。
+     * 没有选出主。当投票被瓜分，没有任何一个candidate收到了majority的vote时，没有leader被选出。这种情况下，每个candidate等待的投票的过程就超时了，接着candidates都会将本地的current_term_id再加1，发起RequestVoteRPC进行新一轮的leader election
+
+   
+8. Reids Cluster
+   Redis Cluster是Redis提供HA的一种服务器端实现方案。Redis集群包括若干个master node，可以相应write操作。每个master node可以配置多个从slaves。
+   
+   Redis Cluster没有使用一致性hash, 而是引入了Slot哈希槽的概念.
+   Redis Cluster有16384个哈希槽，这些槽会分配给对应的master nodes，对于每个KeyRedis通过CRC16计算得出slot，从而得到对应存储改key的node。
+   客户端可以保存slot和node的mapping，当客户端发送的key不在对应的node，该node会返回MOVED相应，从而把客户端重定向到key所在的node上。
+   
+   Redis Cluster不能保证数据强一致性，因为Redis cluster收到写操作并在master完成写操作之后，会首先返回ack给客户端，之后才会在master和slaves之间做异步复制。
+   所以当write写操作及ack完成但复制前master出现对大部分nodes不可达，这是大部分master会选举出新的slave来承担master的，那么是会存在数据丢失的可能。
+   
+   可以通过一下命令创建一个redis cluster
+   redis-cluster start
+   redis-cluster create
+   
    
 
 
