@@ -1,19 +1,28 @@
-# Getting Started
+# Elastics Search
 
-### Reference Documentation
-For further reference, please consider the following sections:
+* elasticsearch
+* plugin management
+    * ik 中文分词 see more details at
+    https://github.com/medcl/elasticsearch-analysis-ik
+    
+* elastics search 客户端连接方式
+    * TransportClient TransportClient将会在ElasticSearch 7.0弃用并在8.0中完成删除
+    * Rest Client 推荐使用
+    * Jest Java社区开发的Java HTTP Rest客户端
+    * Spring Data ElasticSearch是Spring集成ES的开发API
 
-* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
-* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/docs/2.1.9.RELEASE/maven-plugin/)
-* [Spring Data Elasticsearch (Access+Driver)](https://docs.spring.io/spring-boot/docs/2.2.0.RELEASE/reference/htmlsingle/#boot-features-elasticsearch)
-* [Spring Web](https://docs.spring.io/spring-boot/docs/2.2.0.RELEASE/reference/htmlsingle/#boot-features-developing-web-applications)
-* [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/2.2.0.RELEASE/reference/htmlsingle/#production-ready)
-
-### Guides
-The following guides illustrate how to use some features concretely:
-
-* [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
-* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
-* [Building REST services with Spring](https://spring.io/guides/tutorials/bookmarks/)
-* [Building a RESTful Web Service with Spring Boot Actuator](https://spring.io/guides/gs/actuator-service/)
+*  TransportClient
+```java
+pom dependency
+<dependency>
+    <groupId>org.elasticsearch.client</groupId>
+    <artifactId>transport</artifactId>
+    <version>6.4.3</version>
+</dependency>
+<dependency>
+     <groupId>org.elasticsearch</groupId>
+     <artifactId>elasticsearch</artifactId>
+     <version>6.4.3</version>
+</dependency>
+```
 
