@@ -132,7 +132,7 @@ public class TechEsRestClientProductTests {
 
         Response response = client.getLowLevelClient().performRequest(request);
         assertNotNull(response);
-        assertTrue(response.getStatusLine().getStatusCode() == 201);
+        assertTrue(response.getStatusLine().getStatusCode() == 201 || response.getStatusLine().getStatusCode() == 200);
         return response;
     }
 
@@ -223,11 +223,12 @@ public class TechEsRestClientProductTests {
                 "    }\n" +
                 "}";
         Request getRequest = new Request("GET", "/" + index + "/_search");
+        getRequest.setJsonEntity(query);
         Response getResponse = client.getLowLevelClient().performRequest(getRequest);
 
         assertNotNull(getResponse);
 
-        System.out.println(getResponse);
+        logger.info("Output {}", EntityUtils.toString(getResponse.getEntity()));
 
 
     }

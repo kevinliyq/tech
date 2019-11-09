@@ -1,6 +1,13 @@
 # Elastics Search
 
 * elasticsearch
+elasticsearch是一个开源的，分布式的基于Lucene的全文搜索引擎，它可以做到
+  * 一个分布式的实时文档存储，每个字段都可以做到被索引和搜索
+  * 倒序索引
+  * 实时分析搜索引擎
+  * 支持大规模的扩展，支持PB级的结构化和非结构化数据的存储
+  * 提供多种访问模式，如基于HTTP的Restful方式
+  
 * plugin management
     * ik 中文分词 see more details at
     https://github.com/medcl/elasticsearch-analysis-ik
