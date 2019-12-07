@@ -33,3 +33,58 @@ pom dependency
 </dependency>
 ```
 
+* load a file to es
+curl -XPOST 'localhost:9200/bank/account/_bulk?pretty' --data-binary  @accounts.json
+
+* nested array query
+```java
+PUT my_index
+{
+  "mappings":{  
+      "properties":{ 
+         "employee-id": {
+            "type": "keyword",
+            "index": false
+          },
+         "group":{ "type":"text"},
+         "user":{  
+            "type":"nested",
+            "properties":{  
+               "first":{ "type":"text"},
+               "second":{  "type":"text"}
+            }
+         }
+      }
+   }
+}
+
+PUT my_index/_doc/3
+{
+  "group" : "star",
+  "employee-id": "20191207TL",
+  "user" : [ 
+    { "first" : "shengxian", "last" :  "Li"},
+    { "first" : "yunze", "last" :  "Chen"}
+  ]
+}
+
+GET my_index/_search
+{
+  "query": {
+    "nested": {
+      "path": "user",
+      "query": {
+        "match": {
+          "user.last": "Li"
+        }
+      }
+    }
+  },
+  "_source": ["employee-id", "user"],
+  "from": 1,
+  "size": 2
+}
+
+```
+
+
