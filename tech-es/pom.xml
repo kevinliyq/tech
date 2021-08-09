@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>1.8</java.version>
-		<es.versin>7.1.1</es.versin>
+		<es.versin>7.13.3</es.versin>
 	</properties>
 
 	<dependencies>
